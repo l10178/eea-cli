@@ -1,5 +1,9 @@
 # Project spec
 config.yaml
+temp
+projects.txt
+projects.yaml
+dist
 
 # Binaries for programs and plugins
 *.exe

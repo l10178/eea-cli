@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	Cloud `yaml:"cloud"`
+	Cloud  `yaml:"cloud"`
+	GitLab `yaml:"gitlab"`
 }
 
 type Cloud struct {
@@ -18,7 +19,13 @@ type Cloud struct {
 	Registry        string `yaml:"registry"`
 }
 
-func GetConfig() (Config, error) {
+type GitLab struct {
+	PrivateToken    string `yaml:"private-token"`
+	ApiRoot         string `yaml:"api-root"`
+	TagSleepSeconds string `yaml:"tag-sleep-seconds"`
+}
+
+func GetConfig() Config {
 	configFile := os.Getenv("EEA_CFG")
 	if configFile == "" {
 		configFile = "./config.yaml"
@@ -31,5 +38,5 @@ func GetConfig() (Config, error) {
 	if err != nil {
 		log.Fatalf("Unmarshal config file error: %v", err)
 	}
-	return conf, err
+	return conf
 }

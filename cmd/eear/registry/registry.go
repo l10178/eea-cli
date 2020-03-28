@@ -1,17 +1,16 @@
 package registry
 
 import (
-	"eea-cli/config"
 	"fmt"
 	"github.com/jdcloud-api/jdcloud-sdk-go/core"
 	"github.com/jdcloud-api/jdcloud-sdk-go/services/containerregistry/apis"
 	regClient "github.com/jdcloud-api/jdcloud-sdk-go/services/containerregistry/client"
+	"github.com/l10178/eea-cli/config"
 	"log"
 )
 
 func QueryRegistryToken() {
-	cfg, _ := config.GetConfig()
-	cloud := cfg.Cloud
+	cloud := config.GetConfig().Cloud
 
 	crd := core.NewCredentials(cloud.AccessKeyId, cloud.SecretAccessKey)
 	client := regClient.NewContainerregistryClient(crd)
