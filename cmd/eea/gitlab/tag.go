@@ -3,6 +3,7 @@ package gitlab
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/l10178/eea-cli/config"
 	"io/ioutil"
 	"log"
@@ -22,6 +23,19 @@ type AddTagReq struct {
 type AddTagResponse struct {
 	Name   string
 	Target string
+}
+
+type RepositoryTag struct {
+	Name    string
+	Message string
+	Target  string
+	Commit  Commit `json:"commit"`
+}
+
+type Commit struct {
+	Id      string
+	ShortId string `json:"short_id"`
+	Message string
 }
 
 func AddTag(req *AddTagReq) (AddTagResponse, error) {
@@ -118,6 +132,92 @@ func BatchTag(file string, tag string, ref string) error {
 		//wait for tag web hook
 		duration, _ := time.ParseDuration(gitlab.TagSleepSeconds)
 		time.Sleep(duration)
+	}
+
+	if errs > 0 {
+		return errors.New("error")
+	}
+	return nil
+}
+
+func GetRepositoryTag(projectId string, tag string) (RepositoryTag, error) {
+	var result RepositoryTag
+	gitlab := config.GetConfig().GitLab
+
+	id := url.QueryEscape(projectId)
+
+	//GET /projects/:id/repository/tags/:tag_name
+	gitApiTag := gitlab.ApiRoot + "/projects/" + id + "/repository/tags/" + tag
+
+	httpReq, err := http.NewRequest("GET", gitApiTag, nil)
+	if err != nil {
+		log.Fatal(err)
+		return result, err
+	}
+
+	query := httpReq.URL.Query()
+	httpReq.URL.RawQuery = query.Encode()
+	httpReq.Header.Add("PRIVATE-TOKEN", gitlab.PrivateToken)
+
+	var response *http.Response
+	response, err = http.DefaultClient.Do(httpReq)
+	if err != nil {
+		log.Fatal(err)
+		return result, err
+	}
+	defer response.Body.Close()
+	body, _ := ioutil.ReadAll(response.Body)
+	if response.StatusCode >= 200 && response.StatusCode < 300 {
+		err = json.Unmarshal(body, &result)
+	} else {
+		err = errors.New(response.Status)
+		log.Printf("[%s] %s", projectId, string(body))
+	}
+	return result, err
+}
+
+func BatchCommit(file string, tag string) error {
+	gitlab := config.GetConfig().GitLab
+	// read all projects from the file
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	// one projects a line
+	slices := strings.Split(string(data), "\n")
+
+	// count errors
+	errs := 0
+
+	for _, line := range slices {
+
+		//ignore empty line or commented
+		if strings.TrimSpace(line) == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// the line is `group:project-name:master`
+		sls := strings.Split(line, ":")
+
+		// id = group + name or a number id
+		name := strings.TrimSpace(sls[1])
+		id := name
+
+		if strings.TrimSpace(sls[0]) != "" {
+			id = strings.TrimSpace(sls[0]) + "/" + name
+		}
+
+		resp, err := GetRepositoryTag(id, tag)
+
+		if err != nil {
+			errs += 1
+			continue
+		}
+		// full git url
+		gitUrl := gitlab.GitRoot + "/" + id + ".git"
+		fmt.Printf("%s,%s,%s\n", name, gitUrl, resp.Commit.Id)
 	}
 
 	if errs > 0 {

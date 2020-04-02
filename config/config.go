@@ -21,6 +21,7 @@ type Cloud struct {
 
 type GitLab struct {
 	PrivateToken    string `yaml:"private-token"`
+	GitRoot         string `yaml:"git-root"`
 	ApiRoot         string `yaml:"api-root"`
 	TagSleepSeconds string `yaml:"tag-sleep-seconds"`
 }

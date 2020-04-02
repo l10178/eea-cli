@@ -84,6 +84,29 @@ func commands() {
 				return gitlab.BatchTag(c.String("file"), c.String("tag"), c.String("ref"))
 			},
 		},
+		{
+			Name:      "batch-commit",
+			Aliases:   []string{"bc"},
+			Usage:     "Batch get tag's commit id by the file.",
+			UsageText: "eea batch-commit --file projects.txt --tag 1.2.0-release",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "file",
+					Aliases:  []string{"f"},
+					Required: true,
+					Usage:    "The file contains all repositories.",
+				},
+				&cli.StringFlag{
+					Name:     "tag",
+					Aliases:  []string{"t"},
+					Required: true,
+					Usage:    "The tag name.",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return gitlab.BatchCommit(c.String("file"), c.String("tag"))
+			},
+		},
 	}
 }
 
